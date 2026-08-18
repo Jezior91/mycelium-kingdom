@@ -1,0 +1,191 @@
+{
+  "nodes": [
+    {
+      "id": "172.16.42.25",
+      "label": "Serwer / Linux",
+      "emoji": "🐧",
+      "type": "unknown",
+      "ip": "172.16.42.25",
+      "status": "online",
+      "centrality": 0.4,
+      "is_gateway": false,
+      "open_ports": [
+        8080
+      ]
+    },
+    {
+      "id": "172.16.42.26",
+      "label": "Router / AP",
+      "emoji": "📡",
+      "type": "unknown",
+      "ip": "172.16.42.26",
+      "status": "arp_only",
+      "centrality": 0.4,
+      "is_gateway": false,
+      "open_ports": [
+        53
+      ]
+    },
+    {
+      "id": "172.16.65.21",
+      "label": "Serwer / Linux",
+      "emoji": "🐧",
+      "type": "unknown",
+      "ip": "172.16.65.21",
+      "status": "online",
+      "centrality": 0.4,
+      "is_gateway": false,
+      "open_ports": [
+        8080
+      ]
+    },
+    {
+      "id": "172.16.65.22",
+      "label": "Router / AP",
+      "emoji": "📡",
+      "type": "unknown",
+      "ip": "172.16.65.22",
+      "status": "arp_only",
+      "centrality": 0.4,
+      "is_gateway": false,
+      "open_ports": [
+        53
+      ]
+    },
+    {
+      "id": "172.16.50.105",
+      "label": "Serwer / Linux",
+      "emoji": "🐧",
+      "type": "unknown",
+      "ip": "172.16.50.105",
+      "status": "online",
+      "centrality": 0.4,
+      "is_gateway": false,
+      "open_ports": [
+        8080
+      ]
+    },
+    {
+      "id": "172.16.50.106",
+      "label": "Router / AP",
+      "emoji": "📡",
+      "type": "unknown",
+      "ip": "172.16.50.106",
+      "status": "arp_only",
+      "centrality": 0.4,
+      "is_gateway": false,
+      "open_ports": [
+        53
+      ]
+    },
+    {
+      "id": "172.16.23.13",
+      "label": "Forteca Linux",
+      "emoji": "🗼",
+      "type": "unknown",
+      "ip": "172.16.23.13",
+      "status": "online",
+      "centrality": 0.4,
+      "is_gateway": false,
+      "open_ports": [
+        8080
+      ]
+    },
+    {
+      "id": "172.16.23.14",
+      "label": "Cytadela Sieci",
+      "emoji": "👑",
+      "type": "unknown",
+      "ip": "172.16.23.14",
+      "status": "arp_only",
+      "centrality": 0.4,
+      "is_gateway": false,
+      "open_ports": [
+        53
+      ]
+    },
+    {
+      "id": "172.16.45.189",
+      "label": "Forteca Linux",
+      "emoji": "🗼",
+      "type": "unknown",
+      "ip": "172.16.45.189",
+      "status": "online",
+      "centrality": 0.4,
+      "is_gateway": false,
+      "open_ports": [
+        8080
+      ]
+    },
+    {
+      "id": "172.16.45.190",
+      "label": "Cytadela Sieci",
+      "emoji": "👑",
+      "type": "unknown",
+      "ip": "172.16.45.190",
+      "status": "arp_only",
+      "centrality": 0.4,
+      "is_gateway": false,
+      "open_ports": [
+        53
+      ]
+    },
+    {
+      "id": "172.16.67.197",
+      "label": "Forteca Linux",
+      "emoji": "🗼",
+      "type": "unknown",
+      "ip": "172.16.67.197",
+      "status": "online",
+      "centrality": 0.4,
+      "is_gateway": false,
+      "open_ports": [
+        8080
+      ]
+    },
+    {
+      "id": "172.16.67.198",
+      "label": "Cytadela Sieci",
+      "emoji": "👑",
+      "type": "unknown",
+      "ip": "172.16.67.198",
+      "status": "arp_only",
+      "centrality": 0.4,
+      "is_gateway": false,
+      "open_ports": [
+        53
+      ]
+    },
+    {
+      "id": "172.16.11.113",
+      "label": "Forteca Linux",
+      "emoji": "🗼",
+      "type": "unknown",
+      "ip": "172.16.11.113",
+      "status": "online",
+      "centrality": 0.4,
+      "is_gateway": false,
+      "open_ports": [
+        8080
+      ]
+    },
+    {
+      "id": "172.16.11.114",
+      "label": "Zwiadowca Android",
+      "emoji": "🗺️",
+      "type": "unknown",
+      "ip": "172.16.11.114",
+      "status": "arp_only",
+      "centrality": 0.4,
+      "is_gateway": false,
+      "open_ports": [
+        53,
+        8080
+      ]
+    }
+  ],
+  "edges": [],
+  "gateway": null,
+  "total_kingdoms": 14,
+  "total_relations": 0
+}

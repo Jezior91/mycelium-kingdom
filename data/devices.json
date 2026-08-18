@@ -1,0 +1,422 @@
+{
+  "devices": {
+    "172.16.42.25": {
+      "ip": "172.16.42.25",
+      "mac": "\u2014",
+      "hostname": "this-device",
+      "device_type": "linux_server",
+      "name": "Serwer / Linux",
+      "emoji": "\ud83d\udc27",
+      "category": "computer",
+      "description": "Komputer lub serwer z systemem Linux",
+      "open_ports": [
+        8080
+      ],
+      "os_hint": "linux",
+      "ttl": 64,
+      "actions": [
+        "ping",
+        "ssh",
+        "http_get"
+      ],
+      "discovered_at": "2026-06-22T08:18:28.059508",
+      "status": "online",
+      "is_self": true
+    },
+    "172.16.42.26": {
+      "ip": "172.16.42.26",
+      "mac": "82:0F:FB:83:30:55",
+      "hostname": "172.16.42.26",
+      "device_type": "router",
+      "name": "Router / AP",
+      "emoji": "\ud83d\udce1",
+      "category": "network",
+      "description": "Router lub punkt dost\u0119pu WiFi",
+      "open_ports": [
+        53
+      ],
+      "os_hint": "unknown",
+      "ttl": 0,
+      "actions": [
+        "ping",
+        "get_clients",
+        "reboot",
+        "get_stats"
+      ],
+      "discovered_at": "2026-06-22T08:18:30.010832",
+      "status": "arp_only",
+      "is_self": false
+    },
+    "172.16.65.21": {
+      "ip": "172.16.65.21",
+      "mac": "\u2014",
+      "hostname": "this-device",
+      "device_type": "linux_server",
+      "name": "Serwer / Linux",
+      "emoji": "\ud83d\udc27",
+      "category": "computer",
+      "description": "Komputer lub serwer z systemem Linux",
+      "open_ports": [
+        8080
+      ],
+      "os_hint": "linux",
+      "ttl": 64,
+      "actions": [
+        "ping",
+        "ssh",
+        "http_get"
+      ],
+      "discovered_at": "2026-06-23T14:09:09.708613",
+      "status": "online",
+      "is_self": true
+    },
+    "172.16.65.22": {
+      "ip": "172.16.65.22",
+      "mac": "0A:E9:C0:91:64:46",
+      "hostname": "172.16.65.22",
+      "device_type": "router",
+      "name": "Router / AP",
+      "emoji": "\ud83d\udce1",
+      "category": "network",
+      "description": "Router lub punkt dost\u0119pu WiFi",
+      "open_ports": [
+        53
+      ],
+      "os_hint": "unknown",
+      "ttl": 0,
+      "actions": [
+        "ping",
+        "get_clients",
+        "reboot",
+        "get_stats"
+      ],
+      "discovered_at": "2026-06-23T14:09:11.133580",
+      "status": "arp_only",
+      "is_self": false
+    },
+    "172.16.50.105": {
+      "ip": "172.16.50.105",
+      "mac": "\u2014",
+      "hostname": "this-device",
+      "device_type": "linux_server",
+      "name": "Serwer / Linux",
+      "emoji": "\ud83d\udc27",
+      "category": "computer",
+      "description": "Komputer lub serwer z systemem Linux",
+      "open_ports": [
+        8080
+      ],
+      "os_hint": "linux",
+      "ttl": 64,
+      "actions": [
+        "ping",
+        "ssh",
+        "http_get"
+      ],
+      "discovered_at": "2026-06-24T16:16:09.816095",
+      "status": "online",
+      "is_self": true
+    },
+    "172.16.50.106": {
+      "ip": "172.16.50.106",
+      "mac": "CA:C6:54:78:4C:02",
+      "hostname": "172.16.50.106",
+      "device_type": "router",
+      "name": "Router / AP",
+      "emoji": "\ud83d\udce1",
+      "category": "network",
+      "description": "Router lub punkt dost\u0119pu WiFi",
+      "open_ports": [
+        53
+      ],
+      "os_hint": "unknown",
+      "ttl": 0,
+      "actions": [
+        "ping",
+        "get_clients",
+        "reboot",
+        "get_stats"
+      ],
+      "discovered_at": "2026-06-24T16:16:11.312285",
+      "status": "arp_only",
+      "is_self": false
+    },
+    "172.16.23.13": {
+      "ip": "172.16.23.13",
+      "mac": "\u2014",
+      "hostname": "this-device",
+      "device_type": "linux_server",
+      "name": "Forteca Linux",
+      "emoji": "\ud83d\uddfc",
+      "category": "fortresses",
+      "description": "Serwer lub stacja robocza Linux \u2014 stabilna i otwarta",
+      "open_ports": [
+        8080
+      ],
+      "os_hint": "linux",
+      "ttl": 64,
+      "actions": [
+        "ping",
+        "ssh",
+        "http_get",
+        "port_scan"
+      ],
+      "discovered_at": "2026-06-26T13:41:54.427461",
+      "status": "online",
+      "is_self": true
+    },
+    "172.16.23.14": {
+      "ip": "172.16.23.14",
+      "mac": "22:9C:40:13:A9:0C",
+      "hostname": "172.16.23.14",
+      "device_type": "router",
+      "name": "Cytadela Sieci",
+      "emoji": "\ud83d\udc51",
+      "category": "capital",
+      "description": "Router/AP \u2014 serce Imperium, przez kt\u00f3ry przep\u0142ywa ca\u0142e \u017cycie",
+      "open_ports": [
+        53
+      ],
+      "os_hint": "unknown",
+      "ttl": 0,
+      "actions": [
+        "ping",
+        "get_clients",
+        "reboot",
+        "traceroute"
+      ],
+      "discovered_at": "2026-06-26T13:41:55.896068",
+      "status": "arp_only",
+      "is_self": false
+    },
+    "172.16.45.189": {
+      "ip": "172.16.45.189",
+      "mac": "\u2014",
+      "hostname": "this-device",
+      "device_type": "linux_server",
+      "name": "Forteca Linux",
+      "emoji": "\ud83d\uddfc",
+      "category": "fortresses",
+      "description": "Serwer lub stacja robocza Linux \u2014 stabilna i otwarta",
+      "open_ports": [
+        8080
+      ],
+      "os_hint": "linux",
+      "ttl": 64,
+      "actions": [
+        "ping",
+        "ssh",
+        "http_get",
+        "port_scan"
+      ],
+      "discovered_at": "2026-07-01T08:41:55.602767",
+      "status": "online",
+      "is_self": true
+    },
+    "172.16.45.190": {
+      "ip": "172.16.45.190",
+      "mac": "AE:B3:1E:C2:8C:A0",
+      "hostname": "172.16.45.190",
+      "device_type": "router",
+      "name": "Cytadela Sieci",
+      "emoji": "\ud83d\udc51",
+      "category": "capital",
+      "description": "Router/AP \u2014 serce Imperium, przez kt\u00f3ry przep\u0142ywa ca\u0142e \u017cycie",
+      "open_ports": [
+        53
+      ],
+      "os_hint": "unknown",
+      "ttl": 0,
+      "actions": [
+        "ping",
+        "get_clients",
+        "reboot",
+        "traceroute"
+      ],
+      "discovered_at": "2026-07-01T08:41:57.098271",
+      "status": "arp_only",
+      "is_self": false
+    },
+    "172.16.67.197": {
+      "ip": "172.16.67.197",
+      "mac": "\u2014",
+      "hostname": "this-device",
+      "device_type": "linux_server",
+      "name": "Forteca Linux",
+      "emoji": "\ud83d\uddfc",
+      "category": "fortresses",
+      "description": "Serwer lub stacja robocza Linux \u2014 stabilna i otwarta",
+      "open_ports": [
+        8080
+      ],
+      "os_hint": "linux",
+      "ttl": 64,
+      "actions": [
+        "ping",
+        "ssh",
+        "http_get",
+        "port_scan"
+      ],
+      "discovered_at": "2026-07-04T09:06:31.334400",
+      "status": "online",
+      "is_self": true
+    },
+    "172.16.67.198": {
+      "ip": "172.16.67.198",
+      "mac": "B6:2D:98:2F:BC:07",
+      "hostname": "172.16.67.198",
+      "device_type": "router",
+      "name": "Cytadela Sieci",
+      "emoji": "\ud83d\udc51",
+      "category": "capital",
+      "description": "Router/AP \u2014 serce Imperium, przez kt\u00f3ry przep\u0142ywa ca\u0142e \u017cycie",
+      "open_ports": [
+        53
+      ],
+      "os_hint": "unknown",
+      "ttl": 0,
+      "actions": [
+        "ping",
+        "get_clients",
+        "reboot",
+        "traceroute"
+      ],
+      "discovered_at": "2026-07-04T09:06:32.832528",
+      "status": "arp_only",
+      "is_self": false
+    },
+    "172.16.11.113": {
+      "ip": "172.16.11.113",
+      "mac": "\u2014",
+      "hostname": "ip-172-16-11-113.ec2.internal",
+      "device_type": "linux_server",
+      "name": "Forteca Linux",
+      "emoji": "\ud83d\uddfc",
+      "category": "fortresses",
+      "description": "Serwer lub stacja robocza Linux \u2014 stabilna i otwarta",
+      "open_ports": [
+        8080
+      ],
+      "os_hint": "linux",
+      "ttl": 64,
+      "actions": [
+        "ping",
+        "ssh",
+        "http_get",
+        "port_scan"
+      ],
+      "discovered_at": "2026-07-04T10:44:33.367352",
+      "status": "online",
+      "is_self": true
+    },
+    "172.16.11.114": {
+      "ip": "172.16.11.114",
+      "mac": "16:1A:C2:5E:81:4C",
+      "hostname": "ip-172-16-11-114.ec2.internal",
+      "device_type": "android_phone",
+      "name": "Zwiadowca Android",
+      "emoji": "\ud83d\uddfa\ufe0f",
+      "category": "scouts",
+      "description": "Mobilny zwiadowca \u2014 zawsze w ruchu",
+      "open_ports": [
+        53,
+        8080
+      ],
+      "os_hint": "unknown",
+      "ttl": 0,
+      "actions": [
+        "ping",
+        "adb_connect",
+        "port_scan"
+      ],
+      "discovered_at": "2026-07-04T10:44:34.847598",
+      "status": "arp_only",
+      "is_self": false
+    },
+    "172.16.72.26": {
+      "ip": "172.16.72.26",
+      "mac": "c2:ed:2f:48:b1:9b",
+      "hostname": "",
+      "status": "arp_only",
+      "name": "172.16.72.26",
+      "emoji": "\ud83d\udda5\ufe0f",
+      "category": "unknown",
+      "device_type": "Unknown",
+      "open_ports": [],
+      "is_self": false
+    },
+    "172.16.21.94": {
+      "ip": "172.16.21.94",
+      "mac": "2e:ca:c0:98:4f:7b",
+      "hostname": "",
+      "status": "arp_only",
+      "name": "172.16.21.94",
+      "emoji": "\ud83d\udda5\ufe0f",
+      "category": "unknown",
+      "device_type": "Unknown",
+      "open_ports": [],
+      "is_self": false
+    },
+    "172.16.49.194": {
+      "ip": "172.16.49.194",
+      "mac": "12:0a:25:8b:46:a4",
+      "hostname": "",
+      "status": "arp_only",
+      "name": "172.16.49.194",
+      "emoji": "\ud83d\udda5\ufe0f",
+      "category": "unknown",
+      "device_type": "Unknown",
+      "open_ports": [],
+      "is_self": false
+    },
+    "172.16.51.222": {
+      "ip": "172.16.51.222",
+      "mac": "3e:b6:3e:c2:37:16",
+      "hostname": "ip-172-16-51-222.ec2.internal",
+      "status": "arp_only",
+      "name": "ip-172-16-51-222.ec2.internal",
+      "emoji": "\ud83d\udda5\ufe0f",
+      "category": "unknown",
+      "device_type": "Urz\u0105dzenie",
+      "open_ports": [],
+      "is_self": false
+    },
+    "172.16.51.221": {
+      "ip": "172.16.51.221",
+      "mac": "local",
+      "hostname": "(none)",
+      "status": "online",
+      "name": "(none)",
+      "emoji": "\ud83c\udfef",
+      "category": "self",
+      "device_type": "Ten komputer",
+      "open_ports": [],
+      "is_self": true
+    },
+    "172.16.79.214": {
+      "ip": "172.16.79.214",
+      "mac": "4a:63:c8:0c:e3:c8",
+      "hostname": "",
+      "status": "arp_only",
+      "name": "172.16.79.214",
+      "emoji": "\ud83d\udda5\ufe0f",
+      "category": "unknown",
+      "device_type": "Urz\u0105dzenie",
+      "open_ports": [],
+      "is_self": false
+    },
+    "172.16.79.213": {
+      "ip": "172.16.79.213",
+      "mac": "local",
+      "hostname": "(none)",
+      "status": "online",
+      "name": "(none)",
+      "emoji": "\ud83c\udfef",
+      "category": "self",
+      "device_type": "Ten komputer",
+      "open_ports": [],
+      "is_self": true
+    }
+  },
+  "updated_at": "2026-07-06T12:11:24.179039"
+}

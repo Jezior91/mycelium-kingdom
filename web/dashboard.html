@@ -1,0 +1,1435 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>🍄 Mycelium — Centrum Imperium</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui@5/daisyui.css"/>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css"/>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<style>
+  body { background: #121215; color: #f5f5f5; font-family: system-ui, sans-serif; }
+  .kingdom-card {
+    background: #1a1a1e;
+    border: 1px solid #252529;
+    border-radius: 6px;
+    padding: 12px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .kingdom-card:hover { border-color: #4e814e; }
+  .kingdom-card.selected { border-color: #4e814e; background: #1e2a1e; }
+  .status-online { color: #4e814e; }
+  .status-offline { color: #9e3d32; }
+  .status-arp { color: #b8860b; }
+  .badge-cat {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: #252529;
+    color: #b8b8c0;
+  }
+  .sidebar {
+    background: #1a1a1e;
+    border-left: 1px solid #252529;
+    min-width: 300px;
+    max-width: 340px;
+  }
+  .port-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    background: #252529;
+    color: #9aa2ff;
+    margin: 2px;
+    display: inline-block;
+  }
+  #map-canvas { background: #0e0e10; border-radius: 6px; }
+  .tab-btn { padding: 8px 16px; border-radius: 4px 4px 0 0; cursor: pointer; border: none; background: transparent; color: #b8b8c0; font-size: 14px; }
+  .tab-btn.active { background: #1a1a1e; color: #f5f5f5; border-bottom: 2px solid #4e814e; }
+  input[type=text] { background: #252529; border: 1px solid #3a3a42; color: #f5f5f5; border-radius: 4px; padding: 6px 10px; width: 100%; outline: none; }
+  input[type=text]:focus { border-color: #4e814e; }
+  .btn-sm { padding: 5px 12px; font-size: 12px; border-radius: 4px; border: none; cursor: pointer; }
+  .btn-primary { background: #4e814e; color: #f5f5f5; }
+  .btn-primary:hover { background: #3d6b3d; }
+  .btn-ghost { background: transparent; color: #b8b8c0; border: 1px solid #3a3a42; }
+  .btn-ghost:hover { background: #252529; }
+  .btn-danger { background: #9e3d32; color: #f5f5f5; }
+  .scan-btn { padding: 8px 20px; font-size: 14px; border-radius: 4px; border: none; cursor: pointer; background: #4e814e; color: #f5f5f5; }
+  .scan-btn:hover { background: #3d6b3d; }
+  .scan-btn:disabled { background: #3a3a42; color: #b8b8c0; cursor: not-allowed; }
+  .action-btn { padding: 6px 12px; font-size: 12px; border-radius: 4px; border: 1px solid #3a3a42; cursor: pointer; background: #252529; color: #f5f5f5; margin: 3px; }
+  .action-btn:hover { border-color: #4e814e; }
+  .result-box { background: #0e0e10; border: 1px solid #252529; border-radius: 4px; padding: 10px; font-size: 12px; font-family: monospace; color: #b8b8c0; white-space: pre-wrap; max-height: 160px; overflow-y: auto; margin-top: 8px; }
+  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #3a3a42; border-top-color: #4e814e; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: #121215; } ::-webkit-scrollbar-thumb { background: #3a3a42; border-radius: 3px; }
+</style>
+</head>
+<body>
+<!-- HEADER -->
+<div style="background:#1a1a1e;border-bottom:1px solid #252529;padding:10px 16px;display:flex;align-items:center;gap:12px;">
+  <span style="font-size:22px;">🍄</span>
+  <span style="font-weight:700;font-size:16px;">Centrum Imperium Mycelium</span>
+  <span id="device-count" style="font-size:12px;color:#b8b8c0;margin-left:4px;"></span>
+  <div style="flex:1;"></div>
+  <span id="agent-badge" title="Sprawdzam agenta…" style="font-size:11px;color:#888;margin-right:4px;cursor:help;">⏳ Agent…</span>
+  <span id="last-scan" style="font-size:11px;color:#b8b8c0;margin-right:8px;"></span>
+  <button class="scan-btn" id="btn-scan" onclick="runScan()">⚡ Skanuj sieć</button>
+</div>
+
+<!-- TABS -->
+<div style="background:#121215;border-bottom:1px solid #252529;padding:0 16px;display:flex;gap:4px;">
+  <button class="tab-btn active" onclick="switchTab('kingdoms',this)">👑 Królestwa</button>
+  <button class="tab-btn" onclick="switchTab('map',this)">🗺️ Mapa</button>
+  <button class="tab-btn" onclick="switchTab('expansion',this)">⚔️ Ekspansja</button>
+  <button class="tab-btn" onclick="switchTab('spectrum',this)">📡 Spektrum</button>
+  <button class="tab-btn" onclick="switchTab('nexus',this)">🔌 Nexus</button>
+  <button class="tab-btn" onclick="switchTab('automations',this)">⚡ Automatyzacje</button>
+</div>
+
+<!-- MAIN -->
+<div style="display:flex;height:calc(100vh - 92px);overflow:hidden;">
+
+  <!-- KINGDOMS TAB -->
+  <div id="tab-kingdoms" style="flex:1;overflow-y:auto;padding:14px;">
+    <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;">
+      <input type="text" id="search" placeholder="🔍 Szukaj urządzenia..." oninput="renderKingdoms()" style="max-width:280px;"/>
+      <select id="filter-cat" onchange="renderKingdoms()" style="background:#252529;border:1px solid #3a3a42;color:#f5f5f5;border-radius:4px;padding:6px 10px;font-size:13px;">
+        <option value="">Wszystkie kategorie</option>
+      </select>
+    </div>
+    <div id="kingdoms-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;"></div>
+    <div id="empty-msg" style="display:none;text-align:center;color:#b8b8c0;padding:40px;">
+      <div style="font-size:40px;margin-bottom:8px;">🏚️</div>
+      <div>Brak urządzeń. Kliknij <b>⚡ Skanuj sieć</b> żeby odkryć królestwa.</div>
+    </div>
+    <div id="loading-msg" style="text-align:center;color:#b8b8c0;padding:40px;">
+      <div class="spinner" style="width:32px;height:32px;border-width:3px;"></div>
+      <div style="margin-top:10px;">Wczytywanie Imperium…</div>
+    </div>
+  </div>
+
+  <!-- MAP TAB -->
+  <div id="tab-map" style="flex:1;display:none;padding:0;overflow:hidden;flex-direction:column;position:relative;">
+    <div id="leaflet-map" style="width:100%;height:100%;"></div>
+    <div id="map-geo-info" style="position:absolute;bottom:10px;left:10px;z-index:1000;background:rgba(26,26,30,0.9);border:1px solid #252529;border-radius:4px;padding:6px 10px;font-size:11px;color:#b8b8c0;"></div>
+    <div id="map-loading" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1000;background:rgba(26,26,30,0.95);border-radius:6px;padding:16px 24px;color:#b8b8c0;display:none;text-align:center;">
+      <div class="spinner" style="width:24px;height:24px;margin:0 auto 8px;"></div>
+      <div>Geolokalizacja IP…</div>
+    </div>
+  </div>
+
+  <!-- EXPANSION TAB -->
+  <div id="tab-expansion" style="flex:1;display:none;padding:14px;overflow-y:auto;">
+    <div style="font-size:14px;font-weight:600;margin-bottom:12px;color:#b8b8c0;">⚔️ Panel Ekspansji — ręczne akcje</div>
+    <div style="background:#1a1a1e;border:1px solid #252529;border-radius:6px;padding:14px;margin-bottom:12px;">
+      <div style="font-weight:600;margin-bottom:8px;">🎯 Cel</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input type="text" id="exp-target" placeholder="IP lub hostname (np. 192.168.1.1)" style="flex:1;max-width:280px;"/>
+        <button class="scan-btn" onclick="doExpAction('ping')">📯 Ping</button>
+        <button class="scan-btn" onclick="doExpAction('ports')" style="background:#676caa;">🔍 Porty</button>
+        <button class="scan-btn" onclick="doExpAction('trace')" style="background:#b8860b;">🛤️ Traceroute</button>
+      </div>
+    </div>
+    <div id="exp-spinner" style="display:none;color:#b8b8c0;margin-bottom:8px;"><span class="spinner"></span> Wysyłam poselstwo…</div>
+    <div id="exp-result" class="result-box" style="display:none;"></div>
+    <div style="margin-top:16px;background:#1a1a1e;border:1px solid #252529;border-radius:6px;padding:14px;">
+      <div style="font-weight:600;margin-bottom:8px;">📜 Poselstwo do wybranego Królestwa</div>
+      <div id="exp-selected" style="font-size:12px;color:#b8b8c0;">Wybierz urządzenie z listy Królestw.</div>
+    </div>
+  </div>
+
+  <!-- SPECTRUM TAB -->
+  <div id="tab-spectrum" style="flex:1;display:none;padding:16px;overflow-y:auto;flex-direction:column;">
+    <div style="font-size:14px;font-weight:600;margin-bottom:12px;color:#b8b8c0;">📡 Analizator Widma — HackRF One</div>
+
+    <!-- controls -->
+    <div style="background:#1a1a1e;border:1px solid #252529;border-radius:6px;padding:14px;margin-bottom:12px;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;">
+      <div>
+        <div style="font-size:11px;color:#888;margin-bottom:4px;">Pasmo od (MHz)</div>
+        <input type="number" id="spec-fmin" value="5800" min="1" max="6000" step="10" style="width:90px;background:#0e0e10;border:1px solid #333;color:#f5f5f5;border-radius:4px;padding:5px 8px;font-size:13px;"/>
+      </div>
+      <div>
+        <div style="font-size:11px;color:#888;margin-bottom:4px;">do (MHz)</div>
+        <input type="number" id="spec-fmax" value="6000" min="1" max="6000" step="10" style="width:90px;background:#0e0e10;border:1px solid #333;color:#f5f5f5;border-radius:4px;padding:5px 8px;font-size:13px;"/>
+      </div>
+      <div>
+        <div style="font-size:11px;color:#888;margin-bottom:4px;">LNA Gain</div>
+        <input type="number" id="spec-lna" value="40" min="0" max="40" step="8" style="width:70px;background:#0e0e10;border:1px solid #333;color:#f5f5f5;border-radius:4px;padding:5px 8px;font-size:13px;"/>
+      </div>
+      <div>
+        <div style="font-size:11px;color:#888;margin-bottom:4px;">VGA Gain</div>
+        <input type="number" id="spec-vga" value="40" min="0" max="62" step="2" style="width:70px;background:#0e0e10;border:1px solid #333;color:#f5f5f5;border-radius:4px;padding:5px 8px;font-size:13px;"/>
+      </div>
+      <div>
+        <div style="font-size:11px;color:#888;margin-bottom:4px;">Szerokość binu</div>
+        <select id="spec-bw" style="background:#0e0e10;border:1px solid #333;color:#f5f5f5;border-radius:4px;padding:5px 8px;font-size:13px;">
+          <option value="500000">500 kHz</option>
+          <option value="1000000" selected>1 MHz</option>
+          <option value="2000000">2 MHz</option>
+          <option value="5000000">5 MHz</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="scan-btn" id="spec-scan-btn" onclick="runSpectrum()">🔭 Skanuj</button>
+        <button class="scan-btn" id="spec-auto-btn" onclick="toggleSpecAuto()" style="background:#676caa;">⏱ Auto</button>
+        <button class="scan-btn" id="spec-demo-btn" onclick="toggleDemo()" style="background:#2a1f4e;border:1px solid #5a4a9e;">🎛️ Demo</button>
+      </div>
+    </div>
+
+    <!-- status bar -->
+    <div id="spec-status" style="font-size:12px;color:#888;margin-bottom:8px;min-height:18px;"></div>
+
+    <!-- equalizer canvas -->
+    <div style="background:#080810;border:1px solid #252529;border-radius:8px;padding:10px;position:relative;flex:1;min-height:340px;overflow:hidden;">
+      <canvas id="spec-chart" style="width:100%;height:100%;display:block;"></canvas>
+      <div id="spec-empty" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#333;font-size:13px;pointer-events:none;">
+        Kliknij 🔭 Skanuj — wymagany lokalny agent Mycelium + HackRF One
+      </div>
+    </div>
+
+    <!-- peaks table -->
+    <div style="margin-top:12px;background:#0e0e10;border:1px solid #252529;border-radius:8px;padding:12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div style="font-size:12px;font-weight:700;color:#b8b8c0;letter-spacing:0.5px;">🏔️ Kluczowe Częstotliwości</div>
+        <div style="display:flex;gap:6px;">
+          <button class="btn-sm" id="peaks-save-btn" onclick="savePeaks()" style="display:none;background:#1e3a1e;border:1px solid #2a6e2a;color:#6dbf6d;font-size:11px;">💾 Zapisz szczyty</button>
+          <button class="btn-sm" onclick="loadSavedPeaks()" style="background:#1a1a2e;border:1px solid #333;color:#888;font-size:11px;">📂 Historia</button>
+        </div>
+      </div>
+      <div id="spec-peaks" style="font-size:12px;color:#555;line-height:1.8;">Uruchom skan aby wykryć kluczowe częstotliwości…</div>
+      <div id="spec-peaks-history" style="display:none;margin-top:10px;border-top:1px solid #252529;padding-top:10px;"></div>
+    </div>
+  </div>
+
+  <!-- NEXUS TAB -->
+  <div id="tab-nexus" style="flex:1;display:none;padding:16px;overflow-y:auto;flex-direction:column;">
+    <div style="font-size:14px;font-weight:600;margin-bottom:12px;color:#b8b8c0;">🔌 Nexus — Detektor urządzeń USB</div>
+
+    <!-- Status bar -->
+    <div style="background:#1a1a1e;border:1px solid #252529;border-radius:6px;padding:12px;margin-bottom:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <button class="btn-sm" onclick="nexusScan()" id="nexus-scan-btn" style="background:#1e3a2e;border:1px solid #2a6e4e;color:#6dbf9d;">🔍 Skanuj urządzenia</button>
+      <button class="btn-sm" onclick="nexusRefreshModules()" style="background:#1e1e3a;border:1px solid #2a2a6e;color:#9d9dbf;">📦 Odśwież moduły</button>
+      <div id="nexus-status" style="font-size:12px;color:#888;">⏳ Łączę z agentem…</div>
+      <div id="nexus-modules-badge" style="font-size:11px;color:#6dbf9d;margin-left:auto;"></div>
+    </div>
+
+    <!-- Loaded modules panel -->
+    <div id="nexus-modules-panel" style="background:#1a1a1e;border:1px solid #252529;border-radius:6px;padding:14px;margin-bottom:12px;display:none;">
+      <div style="font-size:12px;font-weight:700;color:#b8b8c0;letter-spacing:0.5px;margin-bottom:10px;">📦 Załadowane moduły</div>
+      <div id="nexus-modules-list" style="font-size:12px;color:#555;display:flex;flex-wrap:wrap;gap:6px;"></div>
+    </div>
+
+    <!-- Device list -->
+    <div style="background:#1a1a1e;border:1px solid #252529;border-radius:6px;padding:14px;margin-bottom:12px;flex:1;">
+      <div style="font-size:12px;font-weight:700;color:#b8b8c0;letter-spacing:0.5px;margin-bottom:10px;">📋 Wykryte urządzenia USB</div>
+      <div id="nexus-devices" style="font-size:12px;color:#555;">⏳ Łączę z agentem…</div>
+    </div>
+
+    <!-- AI Generator -->
+    <div style="background:#1a1a1e;border:1px solid #252529;border-radius:6px;padding:14px;">
+      <div style="font-size:12px;font-weight:700;color:#b8b8c0;letter-spacing:0.5px;margin-bottom:8px;">🤖 Generator modułów AI (OpenAI)</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
+        <input type="text" id="nexus-ai-key" placeholder="sk-… (klucz OpenAI)" style="flex:1;min-width:180px;background:#0e0e10;border:1px solid #333;color:#f5f5f5;border-radius:4px;padding:5px 8px;font-size:12px;font-family:monospace;"/>
+        <input type="text" id="nexus-vid" placeholder="VID (np. 10c4)" style="width:100px;background:#0e0e10;border:1px solid #333;color:#f5f5f5;border-radius:4px;padding:5px 8px;font-size:12px;font-family:monospace;"/>
+        <input type="text" id="nexus-pid" placeholder="PID (np. ea60)" style="width:100px;background:#0e0e10;border:1px solid #333;color:#f5f5f5;border-radius:4px;padding:5px 8px;font-size:12px;font-family:monospace;"/>
+        <input type="text" id="nexus-devname" placeholder="Nazwa urządzenia" style="width:140px;background:#0e0e10;border:1px solid #333;color:#f5f5f5;border-radius:4px;padding:5px 8px;font-size:12px;"/>
+      </div>
+      <button class="btn-sm" onclick="nexusTriggerGenerate()" style="background:#1e1e3a;border:1px solid #2a2a6e;color:#9d9dbf;margin-bottom:8px;">⚡ Generuj</button>
+      <div id="nexus-gen-status" style="font-size:12px;color:#888;margin-top:4px;"></div>
+      <div id="nexus-gen-actions" style="display:none;margin-top:6px;display:none;gap:6px;">
+        <button class="btn-sm" onclick="nexusCopyCode()" style="background:#1a1a1e;border:1px solid #333;color:#b8b8c0;font-size:10px;">📋 Kopiuj kod</button>
+        <button class="btn-sm" onclick="nexusRefreshModules()" style="background:#1e3a2e;border:1px solid #2a6e4e;color:#6dbf9d;font-size:10px;">🔄 Odśwież listę modułów</button>
+      </div>
+      <pre id="nexus-gen-result" style="display:none;background:#0e0e10;border:1px solid #252529;border-radius:4px;padding:10px;font-size:11px;color:#6dbf9d;overflow-x:auto;margin-top:8px;max-height:220px;"></pre>
+    </div>
+  </div>
+
+  <!-- AUTOMATIONS TAB -->
+  <div id="tab-automations" style="flex:1;display:none;padding:16px;overflow-y:auto;flex-direction:column;">
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap;">
+      <span style="font-size:14px;font-weight:600;color:#b8b8c0;">⚡ Automatyzacje</span>
+      <button class="btn-sm" onclick="showAddAutomation()" style="background:#4e814e;">+ Nowa</button>
+      <button class="btn-sm" onclick="loadAutomations()">🔄 Odśwież</button>
+    </div>
+
+    <!-- Add form -->
+    <div id="auto-add-form" style="display:none;background:#1a1a1e;border:1px solid #4e814e;border-radius:8px;padding:16px;margin-bottom:16px;">
+      <div style="font-weight:600;color:#9fba9f;margin-bottom:10px;">Nowa automatyzacja</div>
+      <div style="display:grid;gap:8px;">
+        <input id="auto-name" placeholder="Nazwa automatyzacji" style="background:#111;color:#e2e8f0;border:1px solid #333;border-radius:6px;padding:8px;">
+        <select id="auto-trigger-type" onchange="updateAutoTriggerUI()" style="background:#111;color:#e2e8f0;border:1px solid #333;border-radius:6px;padding:8px;">
+          <option value="interval">⏱ Co X sekund</option>
+          <option value="time">🕐 O określonej godzinie</option>
+        </select>
+        <div id="auto-trigger-params">
+          <input id="auto-interval" type="number" value="300" placeholder="Interwał (sekundy)" style="background:#111;color:#e2e8f0;border:1px solid #333;border-radius:6px;padding:8px;width:100%;box-sizing:border-box;">
+        </div>
+        <select id="auto-action-type" style="background:#111;color:#e2e8f0;border:1px solid #333;border-radius:6px;padding:8px;">
+          <option value="http">🌐 Żądanie HTTP GET</option>
+          <option value="script">💻 Skrypt lokalny</option>
+          <option value="log">📝 Zapis logu</option>
+        </select>
+        <input id="auto-action-value" placeholder="URL / komenda / wiadomość" style="background:#111;color:#e2e8f0;border:1px solid #333;border-radius:6px;padding:8px;">
+        <div style="display:flex;gap:8px;">
+          <button class="btn-sm" onclick="saveAutomation()" style="background:#4e814e;">💾 Zapisz</button>
+          <button class="btn-sm" onclick="document.getElementById('auto-add-form').style.display='none'">Anuluj</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="auto-list"><div style="color:#666;text-align:center;padding:40px;">Ładowanie...</div></div>
+  </div>
+
+  <!-- SIDEBAR (device detail) -->
+  <div id="sidebar" class="sidebar" style="display:none;overflow-y:auto;padding:16px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div style="font-weight:700;font-size:15px;" id="sd-title">—</div>
+      <button class="btn-sm btn-ghost" onclick="closeSidebar()">✕</button>
+    </div>
+    <div id="sd-emoji" style="font-size:42px;text-align:center;margin:8px 0;"></div>
+    <table style="width:100%;font-size:12px;border-collapse:collapse;margin-bottom:12px;">
+      <tr><td style="color:#b8b8c0;padding:3px 0;">IP</td><td id="sd-ip" style="font-family:monospace;"></td></tr>
+      <tr><td style="color:#b8b8c0;padding:3px 0;">MAC</td><td id="sd-mac" style="font-family:monospace;"></td></tr>
+      <tr><td style="color:#b8b8c0;padding:3px 0;">Hostname</td><td id="sd-hostname"></td></tr>
+      <tr><td style="color:#b8b8c0;padding:3px 0;">Status</td><td id="sd-status"></td></tr>
+      <tr><td style="color:#b8b8c0;padding:3px 0;">OS</td><td id="sd-os"></td></tr>
+      <tr><td style="color:#b8b8c0;padding:3px 0;">Kategoria</td><td id="sd-cat"></td></tr>
+    </table>
+    <div style="font-size:12px;color:#b8b8c0;margin-bottom:4px;">Otwarte porty:</div>
+    <div id="sd-ports" style="margin-bottom:12px;"></div>
+    <div style="font-size:12px;color:#b8b8c0;margin-bottom:6px;">Akcje:</div>
+    <div id="sd-actions"></div>
+    <div id="sd-spinner" style="display:none;margin-top:8px;color:#b8b8c0;"><span class="spinner"></span> Wysyłam…</div>
+    <div id="sd-result" class="result-box" style="display:none;"></div>
+  </div>
+</div>
+
+<script>
+let devices = {};
+let selectedIp = null;
+
+// ── PORT NAMES ──────────────────────────────────────────
+const PORT_NAMES = {21:'FTP',22:'SSH',23:'Telnet',25:'SMTP',53:'DNS',80:'HTTP',
+  110:'POP3',143:'IMAP',443:'HTTPS',445:'SMB',3306:'MySQL',3389:'RDP',
+  5000:'HTTP-alt',5900:'VNC',8080:'HTTP-alt',8443:'HTTPS-alt',9100:'Print',
+  1883:'MQTT',5353:'mDNS',548:'AFP',139:'NetBIOS'};
+
+// ── STATUS LABEL ─────────────────────────────────────────
+function statusLabel(s) {
+  if (s === 'online') return '<span class="status-online">● Online</span>';
+  if (s === 'offline') return '<span class="status-offline">● Offline</span>';
+  return '<span class="status-arp">◐ ARP-only</span>';
+}
+
+// ── LOAD DEVICES FROM FILE ───────────────────────────────
+// ── AGENT CONNECTION ─────────────────────────────────────
+const AGENT_URL = 'http://localhost:5000';
+let agentOnline = false;
+
+async function checkAgent() {
+  const badge = document.getElementById('agent-badge');
+  try {
+    const r = await fetch(AGENT_URL + '/api/stats', {signal: AbortSignal.timeout(1500)});
+    agentOnline = r.ok;
+  } catch(e) { agentOnline = false; }
+  if (badge) {
+    badge.textContent = agentOnline ? '🟢 Agent online' : '🔴 Agent offline';
+    badge.title = agentOnline ? 'Połączony z lokalnym agentem Mycelium' : 'Uruchom install_and_run.bat żeby wykryć urządzenia w sieci';
+    badge.style.color = agentOnline ? '#4e814e' : '#888';
+  }
+  return agentOnline;
+}
+
+async function loadDevices() {
+  document.getElementById('loading-msg').style.display = 'block';
+  document.getElementById('empty-msg').style.display = 'none';
+
+  const online = await checkAgent();
+
+  if (online) {
+    try {
+      const r = await fetch(AGENT_URL + '/api/kingdoms');
+      const data = await r.json();
+      const list = data.kingdoms || [];
+      devices = {};
+      for (const d of list) devices[d.ip] = d;
+      document.getElementById('last-scan').textContent = `✅ Agent online — ${list.length} królestw`;
+      renderKingdoms();
+      drawMap();
+      return;
+    } catch(e) { /* fall through */ }
+  }
+
+  // Fallback: cached file
+  try {
+    const raw = await window.tasklet.readFileFromDisk('/tasklet/agent/home/mycelium/data/devices.json');
+    const data = JSON.parse(raw);
+    devices = data.devices || {};
+    if (data.updated_at) {
+      const d = new Date(data.updated_at);
+      document.getElementById('last-scan').textContent = '📦 Cache: ' + d.toLocaleString('pl');
+    }
+  } catch(e) { devices = {}; }
+  renderKingdoms();
+  drawMap();
+}
+
+// ── RENDER KINGDOMS GRID ─────────────────────────────────
+function renderKingdoms() {
+  document.getElementById('loading-msg').style.display = 'none';
+  const q = document.getElementById('search').value.toLowerCase();
+  const cat = document.getElementById('filter-cat').value;
+  const grid = document.getElementById('kingdoms-grid');
+  
+  // populate filter
+  const cats = [...new Set(Object.values(devices).map(d => d.category).filter(Boolean))];
+  const sel = document.getElementById('filter-cat');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Wszystkie kategorie</option>' + cats.map(c => `<option value="${c}" ${c===cur?'selected':''}>${c}</option>`).join('');
+
+  const list = Object.values(devices).filter(d => {
+    const match = !q || d.ip.includes(q) || (d.name||'').toLowerCase().includes(q) || (d.hostname||'').toLowerCase().includes(q);
+    const catMatch = !cat || d.category === cat;
+    return match && catMatch;
+  });
+
+  if (list.length === 0) {
+    grid.innerHTML = '';
+    document.getElementById('empty-msg').style.display = 'block';
+    document.getElementById('device-count').textContent = '';
+    return;
+  }
+  document.getElementById('empty-msg').style.display = 'none';
+  document.getElementById('device-count').textContent = `(${list.length} królestw)`;
+
+  grid.innerHTML = list.map(d => `
+    <div class="kingdom-card ${selectedIp===d.ip?'selected':''}" onclick="selectDevice('${d.ip}')">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <span style="font-size:22px;">${d.emoji||'🏰'}</span>
+        <div>
+          <div style="font-weight:600;font-size:13px;">${d.name||d.device_type}</div>
+          <div style="font-family:monospace;font-size:11px;color:#b8b8c0;">${d.ip}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+        ${statusLabel(d.status)}
+        <span class="badge-cat">${d.category||'—'}</span>
+        ${d.is_self ? '<span class="badge-cat" style="color:#4e814e;">★ Ten host</span>' : ''}
+      </div>
+      ${d.open_ports && d.open_ports.length ? `<div style="margin-top:6px;">${d.open_ports.slice(0,4).map(p=>`<span class="port-badge">${PORT_NAMES[p]||p}</span>`).join('')}${d.open_ports.length>4?`<span style="font-size:10px;color:#b8b8c0;"> +${d.open_ports.length-4}</span>`:''}</div>` : ''}
+      <div style="margin-top:8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+        <button class="btn-sm" style="font-size:11px;padding:2px 8px;" onclick="event.stopPropagation();scanPorts('${d.ip}',this)">🔍 Porty</button>
+        <div id="ports-${d.ip.replace(/\./g,'-')}" style="display:inline;"></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── DEVICE DETAIL SIDEBAR ────────────────────────────────
+function selectDevice(ip) {
+  selectedIp = ip;
+  const d = devices[ip];
+  if (!d) return;
+  renderKingdoms();
+  document.getElementById('sidebar').style.display = 'block';
+  document.getElementById('sd-title').textContent = d.name || d.device_type;
+  document.getElementById('sd-emoji').textContent = d.emoji || '🏰';
+  document.getElementById('sd-ip').textContent = d.ip;
+  document.getElementById('sd-mac').textContent = d.mac || '—';
+  document.getElementById('sd-hostname').textContent = d.hostname || '—';
+  document.getElementById('sd-status').innerHTML = statusLabel(d.status);
+  document.getElementById('sd-os').textContent = d.os_hint || '—';
+  document.getElementById('sd-cat').textContent = d.category || '—';
+  document.getElementById('sd-ports').innerHTML = d.open_ports && d.open_ports.length
+    ? d.open_ports.map(p => `<span class="port-badge">${PORT_NAMES[p]||p} (${p})</span>`).join('')
+    : '<span style="color:#b8b8c0;font-size:12px;">Brak otwartych portów</span>';
+  document.getElementById('sd-result').style.display = 'none';
+  document.getElementById('sd-spinner').style.display = 'none';
+
+  const actions = [
+    { icon:'📯', label:'Ping', cmd: `ping -c 1 ${d.ip} 2>&1 || ping -n 1 ${d.ip} 2>&1` },
+    { icon:'🔍', label:'Porty', cmd: `python3 -c "
+import socket, threading
+target='${d.ip}'
+ports=[21,22,23,25,53,80,443,445,3306,3389,5000,5900,8080,8443,9100,1883]
+results={}
+lock=threading.Lock()
+def chk(p):
+    s=socket.socket(); s.settimeout(0.4)
+    ok=s.connect_ex((target,p))==0; s.close()
+    with lock: results[p]=ok
+ts=[threading.Thread(target=chk,args=(p,)) for p in ports]
+[t.start() for t in ts]; [t.join(timeout=1) for t in ts]
+names={21:'FTP',22:'SSH',23:'Telnet',25:'SMTP',53:'DNS',80:'HTTP',443:'HTTPS',445:'SMB',3306:'MySQL',3389:'RDP',5000:'HTTP-alt',5900:'VNC',8080:'HTTP-alt',8443:'HTTPS-alt',9100:'Print',1883:'MQTT'}
+print(f'Porty {target}:')
+[print(f'  ✅ {p} ({names.get(p,p)}): OTWARTY') for p in ports if results.get(p)]
+open_count=sum(1 for p in ports if results.get(p))
+print(f'Otwarte: {open_count}/{len(ports)}')
+" 2>&1` },
+    { icon:'🛤️', label:'Traceroute', cmd: `traceroute -m 10 -w 1 ${d.ip} 2>&1 || tracert -h 10 ${d.ip} 2>&1` },
+    { icon:'🌐', label:'HTTP', cmd: `curl -sI --connect-timeout 3 http://${d.ip} 2>&1 | head -10 || echo "Brak odpowiedzi HTTP"` },
+  ];
+  document.getElementById('sd-actions').innerHTML = actions.map((a,i) =>
+    `<button class="action-btn" onclick="runDeviceAction(${i},'${d.ip}')">${a.icon} ${a.label}</button>`
+  ).join('');
+  window._sdActions = actions;
+
+  // set expansion panel
+  document.getElementById('exp-target').value = d.ip;
+  document.getElementById('exp-selected').innerHTML = `<b>${d.emoji} ${d.name}</b> — ${d.ip} — ${d.description||''}`;
+}
+
+async function runDeviceAction(idx, ip) {
+  const action = window._sdActions[idx];
+  document.getElementById('sd-spinner').style.display = 'block';
+  document.getElementById('sd-result').style.display = 'none';
+  try {
+    const out = await window.tasklet.runCommand(action.cmd);
+    document.getElementById('sd-result').textContent = out.log || out.stderr || '(brak wyjścia)';
+  } catch(e) {
+    document.getElementById('sd-result').textContent = 'Błąd: ' + e.message;
+  }
+  document.getElementById('sd-spinner').style.display = 'none';
+  document.getElementById('sd-result').style.display = 'block';
+}
+
+function closeSidebar() {
+  document.getElementById('sidebar').style.display = 'none';
+  selectedIp = null;
+  renderKingdoms();
+}
+
+// ── SCAN ─────────────────────────────────────────────────
+async function runScan() {
+  const btn = document.getElementById('btn-scan');
+  btn.disabled = true;
+  btn.textContent = '⏳ Skanowanie…';
+  const statusEl = document.getElementById('last-scan');
+
+  const online = await checkAgent();
+  if (!online) {
+    if (statusEl) statusEl.innerHTML = '🔴 <b>Agent offline</b> — uruchom <code>install_and_run.bat</code> jako administrator i odczekaj ~30s';
+    btn.disabled = false;
+    btn.textContent = '⚡ Skanuj sieć';
+    return;
+  }
+
+  if (statusEl) statusEl.textContent = '⏳ Trwa odkrywanie królestw…';
+  try {
+    // Trigger discovery on local agent
+    const r = await fetch(AGENT_URL + '/api/discover', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({})
+    });
+    if (statusEl) statusEl.textContent = '⏳ Skan uruchomiony — czekam na wyniki…';
+    // Poll for completion (max 30s)
+    for (let i = 0; i < 15; i++) {
+      await new Promise(res => setTimeout(res, 2000));
+      try {
+        const st = await fetch(AGENT_URL + '/api/discover/status');
+        const info = await st.json();
+        if (!info.running) break;
+        if (statusEl) statusEl.textContent = `⏳ Odkryto ${info.total || 0} królestw…`;
+      } catch(e) { break; }
+    }
+    await loadDevices();
+  } catch(e) {
+    if (statusEl) statusEl.textContent = '❌ Błąd skanu: ' + e.message;
+  }
+  btn.disabled = false;
+  btn.textContent = '⚡ Skanuj sieć';
+}
+
+// ── EXPANSION ────────────────────────────────────────────
+async function doExpAction(type) {
+  const target = document.getElementById('exp-target').value.trim();
+  if (!target) { alert('Podaj IP lub hostname celu!'); return; }
+  const cmds = {
+    ping: `ping -c 2 ${target} 2>&1 || ping -n 2 ${target} 2>&1`,
+    ports: `python3 -c "
+import socket, threading
+target='${target}'
+ports=[21,22,23,25,53,80,135,139,143,443,445,3306,3389,5000,5900,8080,8443,9100,1883]
+results={}; lock=threading.Lock()
+def chk(p):
+    s=socket.socket(); s.settimeout(0.4)
+    ok=s.connect_ex((target,p))==0; s.close()
+    with lock: results[p]=ok
+ts=[threading.Thread(target=chk,args=(p,)) for p in ports]
+[t.start() for t in ts]; [t.join(timeout=1) for t in ts]
+names={21:'FTP',22:'SSH',23:'Telnet',25:'SMTP',53:'DNS',80:'HTTP',135:'RPC',139:'NetBIOS',143:'IMAP',443:'HTTPS',445:'SMB',3306:'MySQL',3389:'RDP',5000:'HTTP-alt',5900:'VNC',8080:'HTTP-alt',8443:'HTTPS-alt',9100:'Print',1883:'MQTT'}
+print(f'Porty {target}:')
+[print(f'  ✅ {p} ({names.get(p,p)}): OTWARTY') for p in ports if results.get(p)]
+open_c=sum(1 for p in ports if results.get(p))
+print(f'Skan gotowy — otwarte: {open_c}/{len(ports)}')
+" 2>&1`,
+    trace: `traceroute -m 12 -w 1 ${target} 2>&1 || tracert -h 12 ${target} 2>&1`
+  };
+  document.getElementById('exp-spinner').style.display = 'block';
+  document.getElementById('exp-result').style.display = 'none';
+  try {
+    const out = await window.tasklet.runCommand(cmds[type]);
+    document.getElementById('exp-result').textContent = out.log || '(brak wyjścia)';
+  } catch(e) {
+    document.getElementById('exp-result').textContent = 'Błąd: ' + e.message;
+  }
+  document.getElementById('exp-spinner').style.display = 'none';
+  document.getElementById('exp-result').style.display = 'block';
+}
+
+// ── TABS ─────────────────────────────────────────────────
+function switchTab(name, btn) {
+  ['kingdoms','map','expansion','spectrum','nexus','automations'].forEach(t => {
+    const el = document.getElementById('tab-' + t);
+    if (el) el.style.display = 'none';
+  });
+  const flexTabs = ['map', 'spectrum', 'nexus'];
+  document.getElementById('tab-' + name).style.display = flexTabs.includes(name) ? 'flex' : 'block';
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (name === 'map') setTimeout(initLeafletMap, 100);
+  if (name === 'nexus') nexusAutoRefresh();
+  if (name === 'automations') loadAutomations();
+}
+
+// ── LEAFLET MAP ───────────────────────────────────────────
+let leafletMap = null;
+let leafletMarkers = {};
+let geoCache = null;
+
+async function getGeoLocation() {
+  if (geoCache) return geoCache;
+  try {
+    const out = await window.tasklet.runCommand('curl -s --max-time 6 "http://ip-api.com/json/?fields=status,lat,lon,city,country,isp,query"');
+    const geo = JSON.parse(out.log || '{}');
+    if (geo.status === 'success') {
+      geoCache = geo;
+      return geo;
+    }
+  } catch(e) {}
+  // fallback — Warszawa
+  return { lat: 52.2297, lon: 21.0122, city: 'Warszawa', country: 'PL', query: '?' };
+}
+
+async function drawMap() { return initLeafletMap(); }
+
+async function initLeafletMap() {
+  const devList = Object.values(devices);
+  document.getElementById('map-loading').style.display = 'block';
+
+  const geo = await getGeoLocation();
+  document.getElementById('map-loading').style.display = 'none';
+
+  // info bar
+  document.getElementById('map-geo-info').textContent =
+    `🌍 Publiczne IP: ${geo.query||'?'} — ${geo.city||''}, ${geo.country||''} — ${geo.isp||''}`;
+
+  if (!leafletMap) {
+    leafletMap = L.map('leaflet-map', {
+      center: [geo.lat, geo.lon],
+      zoom: 14,
+      zoomControl: true
+    });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
+      maxZoom: 19
+    }).addTo(leafletMap);
+  } else {
+    leafletMap.setView([geo.lat, geo.lon], 14);
+    leafletMap.invalidateSize();
+  }
+
+  // clear old markers
+  Object.values(leafletMarkers).forEach(m => leafletMap.removeLayer(m));
+  leafletMarkers = {};
+
+  if (devList.length === 0) return;
+
+  const routers = devList.filter(d => d.category === 'network' || d.category === 'capital');
+  const others  = devList.filter(d => d.category !== 'network' && d.category !== 'capital');
+
+  // router/gateway at geo center
+  routers.forEach((d, i) => {
+    const offset = i * 0.00005;
+    placeMarker(d, geo.lat + offset, geo.lon + offset, true);
+  });
+
+  // other devices arranged in ring ~200m around
+  others.forEach((d, i) => {
+    const angle = (i / Math.max(others.length, 1)) * Math.PI * 2;
+    const r = 0.0018;
+    placeMarker(d, geo.lat + Math.sin(angle) * r, geo.lon + Math.cos(angle) * r, false);
+  });
+
+  // fit map to all markers
+  if (devList.length > 0) {
+    const allLatLngs = Object.values(leafletMarkers).map(m => m.getLatLng());
+    if (allLatLngs.length) leafletMap.fitBounds(L.latLngBounds(allLatLngs).pad(0.3));
+  }
+
+  setTimeout(() => leafletMap.invalidateSize(), 200);
+}
+
+function placeMarker(d, lat, lon, isRouter) {
+  const color = d.status === 'online' ? '#4e814e' : d.status === 'arp_only' ? '#b8860b' : '#9e3d32';
+  const size = isRouter ? 44 : 36;
+  const border = isRouter ? '3px' : '2px';
+  const icon = L.divIcon({
+    html: `<div style="font-size:${isRouter?24:20}px;line-height:1;width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;background:#1a1a1e;border:${border} solid ${color};border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.6);">${d.emoji||'🏰'}</div>`,
+    iconSize: [size, size],
+    iconAnchor: [size/2, size/2],
+    popupAnchor: [0, -size/2],
+    className: ''
+  });
+  const ports = d.open_ports && d.open_ports.length
+    ? d.open_ports.slice(0,5).map(p => PORT_NAMES[p]||p).join(', ')
+    : '—';
+  const marker = L.marker([lat, lon], { icon }).addTo(leafletMap);
+  marker.bindPopup(`
+    <div style="min-width:180px;font-family:system-ui;font-size:13px;">
+      <div style="font-weight:700;margin-bottom:4px;">${d.emoji||'🏰'} ${d.name||d.device_type}</div>
+      <div style="font-family:monospace;color:#555;">${d.ip}</div>
+      ${d.hostname ? `<div style="color:#555;">🏷️ ${d.hostname}</div>` : ''}
+      <div style="margin:4px 0;">Status: <b>${d.status}</b></div>
+      ${d.open_ports?.length ? `<div>Porty: <b>${ports}</b></div>` : ''}
+      <button onclick="(function(){document.querySelectorAll('.tab-btn')[0].click();selectDevice('${d.ip}');})()" style="margin-top:8px;padding:4px 10px;background:#4e814e;color:#fff;border:none;border-radius:3px;cursor:pointer;font-size:12px;">👑 Szczegóły</button>
+    </div>
+  `, { maxWidth: 220 });
+  leafletMarkers[d.ip] = marker;
+}
+
+// ── INIT ─────────────────────────────────────────────────
+loadDevices();
+
+// ── SPECTRUM ANALYZER ────────────────────────────────────
+let specAutoInterval = null;
+let specData = [];         // [{freq, dbm}]
+let peakHold = [];         // peak dBm per bar
+let peakTimer = null;
+let eqAnimFrame = null;
+
+// ---- Equalizer renderer ----
+function drawEqualizer(pts) {
+  const canvas = document.getElementById('spec-chart');
+  const container = canvas.parentElement;
+  canvas.width  = container.clientWidth  - 20;
+  canvas.height = container.clientHeight - 20;
+  const W = canvas.width, H = canvas.height;
+  const ctx = canvas.getContext('2d');
+
+  // background grid
+  ctx.clearRect(0, 0, W, H);
+  const PAD_L = 42, PAD_R = 8, PAD_T = 12, PAD_B = 36;
+  const plotW = W - PAD_L - PAD_R;
+  const plotH = H - PAD_T - PAD_B;
+
+  // dBm range
+  const DBM_MIN = -120, DBM_MAX = -20;
+  const toY = dbm => PAD_T + plotH * (1 - (dbm - DBM_MIN) / (DBM_MAX - DBM_MIN));
+
+  // grid lines
+  ctx.strokeStyle = '#151520';
+  ctx.lineWidth = 1;
+  for (let db = DBM_MIN; db <= DBM_MAX; db += 10) {
+    const y = toY(db);
+    ctx.beginPath(); ctx.moveTo(PAD_L, y); ctx.lineTo(W - PAD_R, y); ctx.stroke();
+    ctx.fillStyle = '#444';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(db + ' dB', PAD_L - 4, y + 3);
+  }
+
+  if (!pts || pts.length === 0) return;
+
+  // bucket into ~120 bars
+  const N_BARS = Math.min(pts.length, Math.floor(plotW / 4));
+  const buckets = [];
+  const chunk = Math.ceil(pts.length / N_BARS);
+  for (let i = 0; i < N_BARS; i++) {
+    const slice = pts.slice(i * chunk, i * chunk + chunk);
+    const avgDbm = slice.reduce((s, p) => s + p.dbm, 0) / slice.length;
+    buckets.push({ freq: slice[0].freq, dbm: avgDbm });
+  }
+
+  // init peak hold
+  if (peakHold.length !== N_BARS) peakHold = buckets.map(b => b.dbm);
+  else buckets.forEach((b, i) => { if (b.dbm > peakHold[i]) peakHold[i] = b.dbm; });
+
+  const barW = Math.max(2, plotW / N_BARS - 1);
+  const gap  = Math.max(1, plotW / N_BARS - barW);
+
+  buckets.forEach((b, i) => {
+    const x   = PAD_L + i * (barW + gap);
+    const y   = toY(b.dbm);
+    const yBot= toY(DBM_MIN);
+    const barH = Math.max(0, yBot - y);
+
+    // gradient: green → yellow → red based on level
+    const norm = (b.dbm - DBM_MIN) / (DBM_MAX - DBM_MIN); // 0..1
+    const grad = ctx.createLinearGradient(0, yBot, 0, y);
+    grad.addColorStop(0,   '#0d2e0d');
+    grad.addColorStop(0.5, '#2a6e2a');
+    grad.addColorStop(0.75,'#b8860b');
+    grad.addColorStop(1,   '#c0392b');
+
+    ctx.fillStyle = grad;
+    ctx.fillRect(x, y, barW, barH);
+
+    // glow on top
+    ctx.fillStyle = norm > 0.8 ? 'rgba(255,80,60,0.9)' : norm > 0.55 ? 'rgba(220,180,0,0.8)' : 'rgba(80,200,80,0.7)';
+    ctx.fillRect(x, y, barW, 2);
+
+    // peak hold line
+    const py = toY(peakHold[i]);
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.fillRect(x, py, barW, 1);
+  });
+
+  // x-axis freq labels
+  ctx.fillStyle = '#555';
+  ctx.font = '9px monospace';
+  ctx.textAlign = 'center';
+  const step = Math.ceil(N_BARS / 10);
+  buckets.forEach((b, i) => {
+    if (i % step === 0) {
+      const x = PAD_L + i * (barW + gap) + barW / 2;
+      ctx.fillText(b.freq.toFixed(0), x, H - PAD_B + 14);
+    }
+  });
+
+  // x-axis label
+  ctx.fillStyle = '#666';
+  ctx.font = '10px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('MHz', W / 2, H - 2);
+}
+
+async function runSpectrum() {
+  const online = await checkAgent();
+  if (!online) {
+    document.getElementById('spec-status').textContent = '🔴 Agent offline — uruchom install_and_run.bat i HackRF One podłącz do USB.';
+    return;
+  }
+
+  const fmin = document.getElementById('spec-fmin').value;
+  const fmax = document.getElementById('spec-fmax').value;
+  const lna  = document.getElementById('spec-lna').value;
+  const vga  = document.getElementById('spec-vga').value;
+  const bw   = document.getElementById('spec-bw').value;
+
+  const btn = document.getElementById('spec-scan-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Skanuję…';
+  document.getElementById('spec-status').textContent = `📡 Sweep ${fmin}–${fmax} MHz…`;
+  document.getElementById('spec-empty').style.display = 'none';
+
+  try {
+    const url = `${AGENT_URL}/api/spectrum?fmin=${fmin}&fmax=${fmax}&lna=${lna}&vga=${vga}&bw=${bw}`;
+    const r = await fetch(url, {signal: AbortSignal.timeout(35000)});
+    const data = await r.json();
+
+    if (!data.ok) {
+      document.getElementById('spec-status').textContent = '❌ ' + data.error;
+      document.getElementById('spec-empty').style.display = 'flex';
+      return;
+    }
+
+    const pts = data.points || [];
+    if (pts.length === 0) {
+      document.getElementById('spec-status').textContent = '⚠️ Brak danych — sprawdź połączenie HackRF.';
+      return;
+    }
+
+    const labels = pts.map(p => p.freq.toFixed(1));
+    const values = pts.map(p => p.dbm);
+
+    specData = pts;
+    document.getElementById('spec-empty').style.display = 'none';
+    drawEqualizer(pts);
+
+    // peak hold decay — every 2s drop peaks by 2 dBm
+    clearInterval(peakTimer);
+    peakTimer = setInterval(() => {
+      peakHold = peakHold.map(p => Math.max(p - 2, -120));
+      drawEqualizer(specData);
+    }, 2000);
+
+    // ---- peak detection: local maxima with min prominence ----
+    const detectedPeaks = detectPeaks(pts);
+    window._lastPeaks = detectedPeaks;
+    renderPeaksTable(detectedPeaks);
+    const saveBtn = document.getElementById('peaks-save-btn');
+    saveBtn.style.display = detectedPeaks.length ? 'inline-block' : 'none';
+
+    const ts = new Date(data.timestamp).toLocaleTimeString('pl');
+    document.getElementById('spec-status').textContent =
+      `✅ ${pts.length} punktów · ${fmin}–${fmax} MHz · ${ts} · HackRF One`;
+
+  } catch(e) {
+    document.getElementById('spec-status').textContent = '❌ Błąd: ' + e.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🔭 Skanuj';
+  }
+}
+
+// ---- Peak detection: local maxima, min prominence 3 dBm, min separation 5 pts ----
+function detectPeaks(pts, threshold = -100, prominence = 3, minSep = 5) {
+  const peaks = [];
+  for (let i = 2; i < pts.length - 2; i++) {
+    const v = pts[i].dbm;
+    if (v < threshold) continue;
+    // local max check in window ±2
+    const isMax = pts[i-2].dbm < v && pts[i-1].dbm < v && pts[i+1].dbm < v && pts[i+2].dbm < v;
+    if (!isMax) continue;
+    // prominence: higher than neighbours by prominence dBm
+    const leftMin  = Math.min(...pts.slice(Math.max(0, i-10), i).map(p => p.dbm));
+    const rightMin = Math.min(...pts.slice(i+1, Math.min(pts.length, i+11)).map(p => p.dbm));
+    if (v - Math.max(leftMin, rightMin) < prominence) continue;
+    peaks.push({ freq: pts[i].freq, dbm: v, idx: i });
+  }
+  // remove peaks too close together (keep stronger)
+  const filtered = [];
+  for (const pk of peaks.sort((a,b) => b.dbm - a.dbm)) {
+    if (!filtered.some(f => Math.abs(f.idx - pk.idx) < minSep)) filtered.push(pk);
+  }
+  return filtered.sort((a,b) => a.freq - b.freq).slice(0, 20);
+}
+
+function sigColor(dbm) {
+  return dbm > -50 ? '#c84b4b' : dbm > -65 ? '#c8932a' : dbm > -80 ? '#b8b000' : '#4e814e';
+}
+function sigLabel(dbm) {
+  return dbm > -50 ? '🔴 Silny' : dbm > -65 ? '🟠 Średni' : dbm > -80 ? '🟡 Słaby' : '🟢 Cichy';
+}
+
+function renderPeaksTable(peaks) {
+  const el = document.getElementById('spec-peaks');
+  if (!peaks.length) {
+    el.innerHTML = '<span style="color:#444">Brak wyraźnych szczytów w tym paśmie</span>';
+    return;
+  }
+  el.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:11.5px;">
+      <thead>
+        <tr style="color:#555;border-bottom:1px solid #222;text-align:left;">
+          <th style="padding:4px 6px;">#</th>
+          <th style="padding:4px 6px;">Częstotliwość</th>
+          <th style="padding:4px 6px;">Moc</th>
+          <th style="padding:4px 6px;">Ocena</th>
+          <th style="padding:4px 6px;">Akcje</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${peaks.map((p,i) => `
+          <tr style="border-bottom:1px solid #1a1a1e;">
+            <td style="padding:5px 6px;color:#444;">${i+1}</td>
+            <td style="padding:5px 6px;font-family:monospace;color:#d0d0d8;">${p.freq.toFixed(3)} <span style="color:#555;font-size:10px;">MHz</span></td>
+            <td style="padding:5px 6px;font-family:monospace;color:${sigColor(p.dbm)};font-weight:700;">${p.dbm.toFixed(1)} dBm</td>
+            <td style="padding:5px 6px;">${sigLabel(p.dbm)}</td>
+            <td style="padding:5px 6px;display:flex;gap:4px;">
+              <button class="btn-sm" onclick="transmitOnFreq(${p.freq}, this)"
+                style="font-size:10px;background:#2a1020;border:1px solid #7a2040;color:#d06080;padding:2px 7px;"
+                title="Nadaj CW na ${p.freq.toFixed(3)} MHz przez HackRF">📡 Nadaj</button>
+              <button class="btn-sm" onclick="saveSinglePeak(${p.freq}, ${p.dbm})"
+                style="font-size:10px;background:#1a2a1a;border:1px solid #2a5a2a;color:#6dbf6d;padding:2px 7px;"
+                title="Zapisz ten szczyt">💾</button>
+            </td>
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
+  // mark peaks on equalizer
+  drawEqualizerWithPeaks(specData, peaks);
+}
+
+// transmit CW carrier on given freq via local agent
+async function transmitOnFreq(freqMhz, btn) {
+  const dur = prompt(`Czas nadawania na ${freqMhz.toFixed(3)} MHz (sekundy, max 10):`, '3');
+  if (!dur) return;
+  const seconds = Math.min(10, Math.max(0.1, parseFloat(dur) || 1));
+  const orig = btn.textContent;
+  btn.textContent = '⏳…'; btn.disabled = true;
+  try {
+    const r = await fetch(`http://localhost:5000/api/spectrum/transmit`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ freq_mhz: freqMhz, seconds })
+    });
+    const d = await r.json();
+    btn.textContent = d.ok ? '✅' : '❌';
+    setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 2500);
+  } catch(e) {
+    btn.textContent = '❌ Offline';
+    setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 2500);
+  }
+}
+
+// save detected peaks to agent
+async function savePeaks() {
+  const btn = document.getElementById('peaks-save-btn');
+  btn.textContent = '⏳…'; btn.disabled = true;
+  const peaks = window._lastPeaks || [];
+  const payload = {
+    timestamp: new Date().toISOString(),
+    freq_range: [
+      parseFloat(document.getElementById('spec-fmin').value),
+      parseFloat(document.getElementById('spec-fmax').value)
+    ],
+    peaks
+  };
+  try {
+    const r = await fetch('http://localhost:5000/api/spectrum/peaks', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const d = await r.json();
+    btn.textContent = d.ok ? '✅ Zapisano' : '❌ Błąd';
+  } catch(e) {
+    // fallback: save via runCommand
+    const res = await window.tasklet.runCommand(
+      `echo '${JSON.stringify(payload).replace(/'/g,"\\'")}' >> /tasklet/agent/home/mycelium/data/spectrum_peaks_log.jsonl`
+    );
+    btn.textContent = res.exitCode === 0 ? '✅ Zapisano (local)' : '❌ Błąd';
+  }
+  setTimeout(() => { btn.textContent = '💾 Zapisz szczyty'; btn.disabled = false; }, 2500);
+}
+
+async function saveSinglePeak(freq, dbm) {
+  window._lastPeaks = [{ freq, dbm }];
+  await savePeaks();
+}
+
+async function loadSavedPeaks() {
+  const hist = document.getElementById('spec-peaks-history');
+  hist.style.display = 'block';
+  hist.innerHTML = '<span style="color:#555;font-size:11px;">Ładuję…</span>';
+  try {
+    const r = await fetch('http://localhost:5000/api/spectrum/peaks');
+    const d = await r.json();
+    if (!d.history || !d.history.length) { hist.innerHTML = '<span style="color:#444;font-size:11px;">Brak zapisanych szczytów</span>'; return; }
+    hist.innerHTML = d.history.slice(-5).reverse().map(h =>
+      `<div style="margin-bottom:6px;border-bottom:1px solid #1a1a1e;padding-bottom:6px;">
+        <span style="color:#444;font-size:10px;">${h.timestamp?.slice(0,19).replace('T',' ')}</span>
+        <span style="color:#555;font-size:10px;margin-left:6px;">${h.freq_range?.[0]}–${h.freq_range?.[1]} MHz</span>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">
+          ${(h.peaks||[]).map(p => `<span style="background:#0e0e10;border:1px solid #2a2a2a;border-radius:3px;padding:1px 6px;font-family:monospace;font-size:11px;color:${sigColor(p.dbm)};">${p.freq.toFixed(3)} MHz&nbsp;${p.dbm.toFixed(1)} dBm</span>`).join('')}
+        </div>
+      </div>`
+    ).join('');
+  } catch(e) {
+    // fallback: read local file
+    const res = await window.tasklet.runCommand('tail -5 /tasklet/agent/home/mycelium/data/spectrum_peaks_log.jsonl 2>/dev/null || echo ""');
+    hist.innerHTML = res.log.trim()
+      ? `<pre style="font-size:10px;color:#666;white-space:pre-wrap;">${res.log.trim()}</pre>`
+      : '<span style="color:#444;font-size:11px;">Brak zapisanych szczytów (agent offline)</span>';
+  }
+}
+
+// draw equalizer + overlay peak markers
+function drawEqualizerWithPeaks(pts, peaks) {
+  drawEqualizer(pts);
+  if (!peaks || !peaks.length) return;
+  const canvas = document.getElementById('spec-chart');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const PAD_L = 42, PAD_R = 8, PAD_T = 12, PAD_B = 36;
+  const plotW = W - PAD_L - PAD_R;
+  const plotH = H - PAD_T - PAD_B;
+  const DBM_MIN = -120, DBM_MAX = -20;
+  const toY = dbm => PAD_T + plotH * (1 - (dbm - DBM_MIN) / (DBM_MAX - DBM_MIN));
+  const freqs = pts.map(p => p.freq);
+  const fMin = freqs[0], fMax = freqs[freqs.length-1], fRange = fMax - fMin;
+  peaks.forEach(pk => {
+    const x = PAD_L + (pk.freq - fMin) / fRange * plotW;
+    const y = toY(pk.dbm);
+    // vertical dashed marker
+    ctx.setLineDash([3, 3]);
+    ctx.strokeStyle = 'rgba(255,200,50,0.4)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, PAD_T); ctx.lineTo(x, H - PAD_B); ctx.stroke();
+    ctx.setLineDash([]);
+    // dot
+    ctx.beginPath();
+    ctx.arc(x, y, 4, 0, 2*Math.PI);
+    ctx.fillStyle = '#ffd700';
+    ctx.fill();
+    // label
+    ctx.font = 'bold 9px monospace';
+    ctx.fillStyle = '#ffd700';
+    ctx.textAlign = 'center';
+    ctx.fillText(pk.freq.toFixed(0), x, y - 8);
+  });
+}
+
+function toggleSpecAuto() {
+  const btn = document.getElementById('spec-auto-btn');
+  if (specAutoInterval) {
+    clearInterval(specAutoInterval);
+    specAutoInterval = null;
+    btn.textContent = '⏱ Auto';
+    btn.style.background = '#676caa';
+  } else {
+    runSpectrum();
+    specAutoInterval = setInterval(runSpectrum, 5000);
+    btn.textContent = '⏹ Stop';
+    btn.style.background = '#9e3d32';
+  }
+}
+
+// ---- TRYB DEMO — symulacja widma RF ----
+let demoInterval = null;
+let demoPhase = 0;
+
+// Znane sygnały radiowe (freq MHz, dbm base, width MHz, label)
+const DEMO_SIGNALS = [
+  { f: 87.9,  dbm: -52, w: 0.2,  label: 'FM Radio' },
+  { f: 98.5,  dbm: -58, w: 0.2,  label: 'FM Radio' },
+  { f: 107.8, dbm: -61, w: 0.2,  label: 'FM Radio' },
+  { f: 173.0, dbm: -72, w: 0.1,  label: 'PMR' },
+  { f: 433.9, dbm: -65, w: 0.05, label: '433 ISM' },
+  { f: 868.3, dbm: -70, w: 0.1,  label: 'LoRa 868' },
+  { f: 900.0, dbm: -55, w: 10,   label: 'GSM 900 DL' },
+  { f: 935.0, dbm: -53, w: 25,   label: 'GSM 900 UL' },
+  { f: 1090.0,dbm: -60, w: 1,    label: 'ADS-B' },
+  { f: 1800.0,dbm: -58, w: 30,   label: 'GSM 1800' },
+  { f: 2412.0,dbm: -48, w: 22,   label: 'WiFi 2.4 ch1' },
+  { f: 2437.0,dbm: -51, w: 22,   label: 'WiFi 2.4 ch6' },
+  { f: 2462.0,dbm: -46, w: 22,   label: 'WiFi 2.4 ch11' },
+  { f: 2480.0,dbm: -62, w: 3,    label: 'BT' },
+];
+
+function generateDemoSpectrum(fmin, fmax, npts) {
+  const pts = [];
+  const step = (fmax - fmin) / npts;
+  for (let i = 0; i < npts; i++) {
+    const freq = fmin + i * step;
+    // noise floor: -95 ± 3 dBm with slow drift
+    let dbm = -95 + (Math.random() - 0.5) * 6 + Math.sin(demoPhase * 0.07 + i * 0.01) * 2;
+
+    // add signals
+    for (const sig of DEMO_SIGNALS) {
+      if (sig.f < fmin || sig.f > fmax) continue;
+      const dist = Math.abs(freq - sig.f);
+      if (dist < sig.w * 3) {
+        // Gaussian bell
+        const amp = sig.dbm + Math.sin(demoPhase * 0.13 + sig.f) * 2;
+        const contrib = amp - 40 * (dist / sig.w) ** 2;
+        if (contrib > dbm) dbm = contrib + (Math.random() - 0.5) * 1.5;
+      }
+    }
+    pts.push({ freq: parseFloat(freq.toFixed(3)), dbm: Math.max(-110, Math.min(-20, dbm)) });
+  }
+  demoPhase++;
+  return pts;
+}
+
+function runDemoFrame() {
+  const fmin = parseFloat(document.getElementById('spec-fmin').value);
+  const fmax = parseFloat(document.getElementById('spec-fmax').value);
+  const pts  = generateDemoSpectrum(fmin, fmax, 400);
+  specData   = pts;
+
+  document.getElementById('spec-empty').style.display = 'none';
+  drawEqualizer(pts);
+
+  const peaks = detectPeaks(pts, -95, 4, 6);
+  window._lastPeaks = peaks;
+  renderPeaksTable(peaks);
+  document.getElementById('peaks-save-btn').style.display = peaks.length ? 'inline-block' : 'none';
+  document.getElementById('spec-status').textContent =
+    `🎛️ DEMO — symulacja ${fmin}–${fmax} MHz · ${peaks.length} szczytów wykrytych · faza ${demoPhase}`;
+}
+
+function toggleDemo() {
+  const btn = document.getElementById('spec-demo-btn');
+  if (demoInterval) {
+    clearInterval(demoInterval);
+    demoInterval = null;
+    btn.textContent = '🎛️ Demo';
+    btn.style.background = '#2a1f4e';
+    btn.style.border = '1px solid #5a4a9e';
+    document.getElementById('spec-status').textContent = '⏹ Demo zatrzymane.';
+  } else {
+    // stop auto if running
+    if (specAutoInterval) { clearInterval(specAutoInterval); specAutoInterval = null; }
+    btn.textContent = '⏹ Stop demo';
+    btn.style.background = '#6e2a8e';
+    btn.style.border = '1px solid #ae5ace';
+    peakHold = [];
+    runDemoFrame();
+    demoInterval = setInterval(runDemoFrame, 120); // ~8 fps animacja
+  }
+}
+
+// ── NEXUS ─────────────────────────────────────────────────
+const NEXUS_URL = AGENT_URL + '/api/nexus';
+let nexusData = null;
+
+async function nexusScan() {
+  const btn = document.getElementById('nexus-scan-btn');
+  const status = document.getElementById('nexus-status');
+  btn.disabled = true;
+  btn.textContent = '⏳ Skanowanie…';
+  status.textContent = '⏳ Wykrywam urządzenia USB…';
+  try {
+    const r = await fetch(NEXUS_URL + '/scan', { method: 'POST' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    nexusData = data;
+    renderNexusDevices(data);
+    status.textContent = `✅ Znaleziono ${(data.devices||[]).length} urządzeń`;
+  } catch(e) {
+    status.textContent = '❌ Błąd: ' + e.message + ' — sprawdź czy agent działa (localhost:5000)';
+    renderNexusFallback();
+  }
+  btn.disabled = false;
+  btn.textContent = '🔍 Skanuj urządzenia';
+}
+
+function renderNexusDevices(data) {
+  const el = document.getElementById('nexus-devices');
+  const devices = data.devices || [];
+  if (devices.length === 0) {
+    el.innerHTML = '<span style="color:#555;">Nie wykryto urządzeń USB.</span>';
+    return;
+  }
+  el.innerHTML = devices.map(d => {
+    const statusColor = d.module ? '#6dbf9d' : '#bf9d6d';
+    const statusIcon = d.module ? '✅' : '⚠️';
+    const statusText = d.module ? d.module : 'Nieznany — brak modułu';
+    return `<div style="background:#0e0e10;border:1px solid #252529;border-radius:4px;padding:8px 10px;margin-bottom:6px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <span style="font-size:18px;">${d.icon||'🔌'}</span>
+      <div style="flex:1;min-width:150px;">
+        <div style="font-weight:600;color:#f5f5f5;font-size:13px;">${d.name||'Nieznane urządzenie'}</div>
+        <div style="color:#888;font-size:11px;font-family:monospace;">${d.vid||'????'}:${d.pid||'????'} — ${d.path||''}</div>
+        <div style="color:#666;font-size:11px;">${d.description||''}</div>
+      </div>
+      <span style="color:${statusColor};font-size:11px;">${statusIcon} ${statusText}</span>
+      ${!d.module ? `<button class="btn-sm" onclick="nexusSelectDevice('${d.vid}','${d.pid}','${(d.name||'').replace(/'/g,'')}')" style="background:#1e1e3a;border:1px solid #2a2a6e;color:#9d9dbf;font-size:10px;">🤖 Generuj moduł</button>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function renderNexusFallback() {
+  const el = document.getElementById('nexus-devices');
+  el.innerHTML = `<div style="color:#bf6d6d;font-size:12px;padding:8px;">
+    ⚠️ Nie można połączyć z agentem (localhost:5000).<br>
+    <span style="color:#666;">Uruchom <code>install_and_run.bat</code> jako administrator na swoim komputerze.<br>
+    Nexus wymaga lokalnego agenta Python do skanowania USB.</span>
+  </div>`;
+}
+
+function nexusSelectDevice(vid, pid, name) {
+  document.getElementById('nexus-vid').value = vid;
+  document.getElementById('nexus-pid').value = pid;
+  document.getElementById('nexus-devname').value = name;
+  document.getElementById('nexus-gen-status').textContent = `✏️ Gotowy do generowania modułu dla ${name}`;
+  document.getElementById('nexus-gen-result').style.display = 'none';
+}
+
+async function nexusTriggerGenerate() {
+  const key = document.getElementById('nexus-ai-key').value.trim();
+  const vid = document.getElementById('nexus-vid').value.trim();
+  const pid = document.getElementById('nexus-pid').value.trim();
+  const name = document.getElementById('nexus-devname').value.trim();
+  const statusEl = document.getElementById('nexus-gen-status');
+  const resultEl = document.getElementById('nexus-gen-result');
+  const actionsEl = document.getElementById('nexus-gen-actions');
+
+  if (!vid || !pid) { statusEl.textContent = '❌ Podaj VID i PID urządzenia'; return; }
+
+  // Save key to backend for future requests
+  if (key) {
+    fetch(NEXUS_URL + '/config', { method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ openai_key: key }) }).catch(() => {});
+  }
+
+  statusEl.textContent = key ? '⏳ Generuję moduł przez AI (GPT-4o-mini)…' : '⏳ Generuję moduł (szablon — brak klucza OpenAI)…';
+  resultEl.style.display = 'none';
+  actionsEl.style.display = 'none';
+  try {
+    const payload = { vid, pid, name, openai_key: key };
+    const r = await fetch(NEXUS_URL + '/generate', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    if (data.error) throw new Error(data.error);
+    const aiLabel = data.ai_used ? '🤖 AI' : '📄 szablon';
+    statusEl.textContent = `✅ Moduł zapisany: ${data.module_name || 'nowy'} (${aiLabel}) → ${data.path || ''}`;
+    resultEl.style.display = 'block';
+    actionsEl.style.display = 'flex';
+    resultEl.textContent = data.code || data.message || JSON.stringify(data, null, 2);
+    nexusRefreshModules();
+  } catch(e) {
+    statusEl.textContent = '❌ ' + e.message;
+  }
+}
+
+function nexusCopyCode() {
+  const code = document.getElementById('nexus-gen-result').textContent;
+  navigator.clipboard.writeText(code).then(() => {
+    const btn = event.target;
+    btn.textContent = '✅ Skopiowano!';
+    setTimeout(() => { btn.textContent = '📋 Kopiuj kod'; }, 2000);
+  }).catch(() => alert('Kopiowanie nieobsługiwane — zaznacz ręcznie.'));
+}
+
+async function nexusRefreshModules() {
+  try {
+    const r = await fetch(NEXUS_URL + '/modules');
+    if (!r.ok) return;
+    const data = await r.json();
+    const modules = data.modules || [];
+    const badge = document.getElementById('nexus-modules-badge');
+    const panel = document.getElementById('nexus-modules-panel');
+    const list = document.getElementById('nexus-modules-list');
+    if (modules.length > 0) {
+      badge.textContent = `📦 ${modules.length} moduł${modules.length === 1 ? '' : modules.length < 5 ? 'y' : 'ów'} załadowanych`;
+      panel.style.display = 'block';
+      list.innerHTML = modules.map(m =>
+        `<span style="background:#0e0e10;border:1px solid #2a6e4e;border-radius:4px;padding:3px 8px;color:#6dbf9d;font-family:monospace;">✅ ${m}</span>`
+      ).join('');
+    } else {
+      badge.textContent = '';
+      panel.style.display = 'none';
+    }
+  } catch(e) { /* agent offline */ }
+}
+
+async function nexusAutoRefresh() {
+  const status = document.getElementById('nexus-status');
+  // Try to fetch last known devices, auto-scan if agent is online and no data yet
+  try {
+    const r = await fetch(NEXUS_URL + '/devices', { signal: AbortSignal.timeout(2000) });
+    if (r.ok) {
+      const data = await r.json();
+      const devList = data.devices || [];
+      if (devList.length > 0) {
+        nexusData = data;
+        renderNexusDevices(data);
+        status.textContent = `📋 ${devList.length} urząd${devList.length === 1 ? 'zeń' : 'zeń'} z ostatniego skanu`;
+      } else {
+        // Agent online but no data yet — auto-scan
+        status.textContent = '🔍 Auto-skan przy starcie…';
+        await nexusScan();
+      }
+      nexusRefreshModules();
+    }
+  } catch(e) {
+    renderNexusFallback();
+    status.textContent = '⚠️ Agent offline — uruchom install_and_run.bat jako admin';
+  }
+}
+
+// ── AUTOMATIONS ──────────────────────────────────────────────
+function showAddAutomation() {
+  document.getElementById('auto-add-form').style.display = 'block';
+}
+function updateAutoTriggerUI() {
+  const t = document.getElementById('auto-trigger-type').value;
+  const el = document.getElementById('auto-trigger-params');
+  if (t === 'interval') {
+    el.innerHTML = '<input id="auto-interval" type="number" value="300" placeholder="Co ile sekund (np. 300)" style="background:#111;color:#e2e8f0;border:1px solid #333;border-radius:6px;padding:8px;width:100%;box-sizing:border-box;">';
+  } else if (t === 'time') {
+    el.innerHTML = '<input id="auto-time" type="time" value="08:00" style="background:#111;color:#e2e8f0;border:1px solid #333;border-radius:6px;padding:8px;width:100%;box-sizing:border-box;">';
+  }
+}
+async function saveAutomation() {
+  const triggerType = document.getElementById('auto-trigger-type').value;
+  let trigger = { type: triggerType };
+  if (triggerType === 'interval') trigger.seconds = parseInt(document.getElementById('auto-interval')?.value || 300);
+  if (triggerType === 'time') trigger.time = document.getElementById('auto-time')?.value || '08:00';
+  const actionType = document.getElementById('auto-action-type').value;
+  const actionVal = document.getElementById('auto-action-value').value;
+  let action = { type: actionType };
+  if (actionType === 'http') { action.url = actionVal; action.method = 'GET'; }
+  else if (actionType === 'script') action.command = actionVal;
+  else action.message = actionVal;
+  const body = {
+    name: document.getElementById('auto-name').value || 'Automatyzacja',
+    trigger, actions: [action], enabled: true
+  };
+  try {
+    await fetch('http://localhost:5000/api/automations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    document.getElementById('auto-add-form').style.display = 'none';
+    document.getElementById('auto-name').value = '';
+    document.getElementById('auto-action-value').value = '';
+    loadAutomations();
+  } catch(e) {
+    alert('Agent offline — uruchom backend.');
+  }
+}
+async function loadAutomations() {
+  const el = document.getElementById('auto-list');
+  if (!el) return;
+  try {
+    const r = await fetch('http://localhost:5000/api/automations');
+    const list = await r.json();
+    if (!list.length) {
+      el.innerHTML = '<div style="color:#666;text-align:center;padding:40px;">Brak automatyzacji — kliknij <b>+ Nowa</b> aby dodać pierwszą.</div>';
+      return;
+    }
+    el.innerHTML = list.map(a => `
+      <div style="background:#1a1a1e;border:1px solid ${a.enabled?'#4e814e':'#333'};border-radius:8px;padding:14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div>
+          <span style="color:${a.enabled?'#9fba9f':'#666'};font-weight:600;">${a.enabled?'⚡':'⏸'} ${a.name}</span>
+          <div style="color:#888;font-size:0.78em;margin-top:4px;">
+            Trigger: ${a.trigger?.type === 'interval' ? `co ${a.trigger.seconds}s` : `codziennie ${a.trigger?.time}`}
+            &nbsp;|&nbsp; Akcja: ${a.actions?.[0]?.type || 'brak'}
+            ${a.last_run ? `&nbsp;|&nbsp; ostatnio: ${new Date(a.last_run*1000).toLocaleTimeString()}` : ''}
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button class="btn-sm" onclick="toggleAuto('${a.id}')" style="background:${a.enabled?'#555':'#4e814e'}">${a.enabled?'⏸ Wstrzymaj':'▶ Włącz'}</button>
+          <button class="btn-sm" style="background:#7f1d1d;" onclick="deleteAuto('${a.id}')">🗑</button>
+        </div>
+      </div>
+    `).join('');
+  } catch {
+    el.innerHTML = '<div style="color:#ef4444;text-align:center;padding:20px;">⚠️ Agent offline</div>';
+  }
+}
+async function toggleAuto(id) {
+  await fetch(`http://localhost:5000/api/automations/${id}/toggle`, { method: 'POST' });
+  loadAutomations();
+}
+async function deleteAuto(id) {
+  if (!confirm('Usunąć automatyzację?')) return;
+  await fetch(`http://localhost:5000/api/automations/${id}`, { method: 'DELETE' });
+  loadAutomations();
+}
+
+// ── PORT SCANNER ─────────────────────────────────────────────
+async function scanPorts(ip, btnEl) {
+  if (btnEl) { btnEl.textContent = '⏳'; btnEl.disabled = true; }
+  try {
+    const r = await fetch('http://localhost:5000/api/scan/ports', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ip })
+    });
+    const data = await r.json();
+    const ports = data.open_ports || [];
+    const safeId = ip.replace(/\./g, '-');
+    const el = document.getElementById('ports-' + safeId);
+    if (el) {
+      el.innerHTML = ports.length
+        ? ports.map(p => `<span style="background:#1e3a5f;color:#60a5fa;padding:2px 6px;border-radius:4px;font-size:0.72em;margin:1px;display:inline-block;">${p.port}/${p.service}</span>`).join('')
+        : '<span style="color:#666;font-size:0.78em;">brak otwartych portów</span>';
+    }
+  } catch(e) {
+    console.warn('port scan error', e);
+  }
+  if (btnEl) { btnEl.textContent = '🔍 Porty'; btnEl.disabled = false; }
+}
+</script>
+</body>
+</html>
